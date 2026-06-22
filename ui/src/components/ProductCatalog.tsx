@@ -33,7 +33,7 @@ export default function ProductCatalog() {
         if (currentCursor) {
             queryParams.append("cursor", currentCursor)
         }
-        fetch(`http://127.0.0.1:8000/api/items?${queryParams.toString()}`, { signal })
+        fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/items?${queryParams.toString()}`, { signal })
             .then((res) => res.json())
             .then((data: Product[]) => { setProducts(data); setIsLoading(false) })
             .catch((err) => { if (err.name !== "AbortError") { console.error("Error fetching products:", err); setIsLoading(false) } });
