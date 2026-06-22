@@ -25,7 +25,7 @@ def get_products(
     Args:
         skip: int = Starting index of products
         limit: int = Number of products to return
-        category: str = A category from (Electronics, Groceries, Kitchen Appliances, "Food", "Pets", "Fashion")
+        category: str = A category from (Electronics, Groceries, Kitchen Appliances, Food, Pets, Fashion)
     Returns:
         A list of Product. (name, category, price, created_at, updated_at)
     """
