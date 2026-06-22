@@ -14,7 +14,7 @@ export default function ProductCatalog() {
     const [category, setCategory] = useState<string>('');
     const [page, setPage] = useState<number>(0);
     const [sortBy, setSortBy] = useState<"created_at" | "updated_at">("created_at")
-    const limit = 20;
+    const [limit, setLimit] = useState<number>(20)
 
     useEffect(() => {
         const queryParams = new URLSearchParams({
@@ -29,7 +29,7 @@ export default function ProductCatalog() {
             .then((res) => res.json())
             .then((data: Product[]) => setProducts(data))
             .catch((err) => console.error("Error fetching products:", err));
-    }, [category, page, sortBy]);
+    }, [category, page, sortBy, limit]);
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 bg-slate-50 text-slate-800 antialiased min-h-screen">
@@ -59,9 +59,9 @@ export default function ProductCatalog() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <label htmlFor="category" className="text-sm font-medium text-slate-600 whitespace-nowrap">Sort by:</label>
+                    <label htmlFor="sort_by" className="text-sm font-medium text-slate-600 whitespace-nowrap">Sort by:</label>
                     <select
-                        id="category"
+                        id="sort_by"
                         value={sortBy}
                         onChange={(e) => { setSortBy(e.target.value as "created_at" | "updated_at"); setPage(0); }}
                         className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
@@ -70,6 +70,19 @@ export default function ProductCatalog() {
                         <option value="updated_at">Updated At</option>
                     </select>
                 </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <label htmlFor="limit" className="text-sm font-medium text-slate-600 whitespace-nowrap">Products per page:</label>
+                    <input
+                        id="limit"
+                        type='number'
+                        value={limit}
+                        onChange={(e) => { if (Number(e.target.value) > 0 && Number(e.target.value) <= 40) setLimit(Number(e.target.value)); setPage(0) }}
+                        className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    >
+                    </input>
+                </div>
+
             </header>
 
             <main className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
@@ -107,6 +120,18 @@ export default function ProductCatalog() {
                     >
                         Previous
                     </button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <label htmlFor="page" className="text-sm font-medium text-slate-600 whitespace-nowrap">Page:</label>
+                        <input
+                            id="page"
+                            type='number'
+                            value={page}
+                            onChange={(e) => { if (Number(e.target.value) >= 0 && Number(e.target.value) * limit < 200000) setPage(Number(e.target.value)) }}
+                            className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                        >
+                        </input>
+                    </div>
+
                     <button
                         disabled={products.length < limit}
                         onClick={() => setPage((p) => p + 1)}
