@@ -24,18 +24,17 @@ async def check_health():
 
 @app.get("/api/items", response_model=list[Product])
 def get_products(
-    skip: int = 0,
     limit: Annotated[int, Query(ge=1, le=1000)] = 25,
     category: Literal[
         "Electronics", "Groceries", "Kitchen Appliances", "Food", "Pets", "Fashion"
     ]
     | None = None,
     sort_by: Literal["updated_at", "created_at"] = "created_at",
+    cursor: str | None = None,
 ):
     """
     Get paginated list of products with filtering
     Args:
-        skip: int = Starting index of products
         limit: int = Number of products to return
         category: str = A category from (Electronics, Groceries, Kitchen Appliances, Food, Pets, Fashion)
         sort_by: str = Sort by created_at or updated_at
@@ -45,6 +44,9 @@ def get_products(
     data = supabase.table("products").select("*")
     if category is not None:
         data = data.eq("category", category)
+    if cursor is not None:
+        data.lt(sort_by, cursor)
     data = data.order(sort_by, desc=True)
-    data = data.range(skip, skip + limit - 1).execute().data
+    data = data.limit(limit)
+    data = data.execute().data
     return data

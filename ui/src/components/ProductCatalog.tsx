@@ -12,24 +12,74 @@ interface Product {
 export default function ProductCatalog() {
     const [products, setProducts] = useState<Product[]>([]);
     const [category, setCategory] = useState<string>('');
-    const [page, setPage] = useState<number>(0);
     const [sortBy, setSortBy] = useState<"created_at" | "updated_at">("created_at")
     const [limit, setLimit] = useState<number>(20)
+    const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null])
+    const [currentPageIndex, setCurrentPageIndex] = useState<number>(0)
+    const [isLoading, setIsLoading] = useState<boolean>(false)
 
     useEffect(() => {
+        setIsLoading(true)
+        const controller = new AbortController()
+        const { signal } = controller
+        const currentCursor = cursorHistory[currentPageIndex]
         const queryParams = new URLSearchParams({
-            skip: String(page * limit),
             limit: String(limit),
             sort_by: sortBy
         });
         if (category) {
             queryParams.append('category', category);
         }
-        fetch(`http://127.0.0.1:8000/api/items?${queryParams.toString()}`)
+        if (currentCursor) {
+            queryParams.append("cursor", currentCursor)
+        }
+        fetch(`http://127.0.0.1:8000/api/items?${queryParams.toString()}`, { signal })
             .then((res) => res.json())
-            .then((data: Product[]) => setProducts(data))
-            .catch((err) => console.error("Error fetching products:", err));
-    }, [category, page, sortBy, limit]);
+            .then((data: Product[]) => { setProducts(data); setIsLoading(false) })
+            .catch((err) => { if (err.name !== "AbortError") { console.error("Error fetching products:", err); setIsLoading(false) } });
+
+        return () => controller.abort()
+    }, [category, currentPageIndex, sortBy, limit]);
+
+
+    const handleNextPage = () => {
+        if (products.length === 0 || isLoading) return;
+
+        const lastItem = products[products.length - 1]
+        const nextCursor = sortBy === "created_at" ? lastItem.created_at : lastItem.updated_at
+
+        if (currentPageIndex + 1 >= cursorHistory.length) {
+            setCursorHistory((prevCurrHistory) => [...prevCurrHistory, nextCursor])
+        }
+        setCurrentPageIndex(currentPageIndex + 1)
+    }
+
+    const handlePrevPage = () => {
+        if (isLoading) return;
+        setCurrentPageIndex(Math.max(0, currentPageIndex - 1))
+    }
+
+    const handleCategoryChange = (newCategory: string) => {
+        setCategory(newCategory)
+        setCursorHistory([null])
+        setCurrentPageIndex(0)
+    }
+
+    const handleSortByChange = (newSortBy: "created_at" | "updated_at") => {
+        setSortBy(newSortBy)
+        setCursorHistory([null])
+        setCurrentPageIndex(0)
+    }
+
+
+    const handleLimitChange = (newLimit: string) => {
+        if (Number(newLimit) <= 0 || Number(newLimit) > 40) return
+        setLimit(Number(newLimit))
+        setCursorHistory([null])
+        setCurrentPageIndex(0)
+    }
+
+
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 bg-slate-50 text-slate-800 antialiased min-h-screen">
@@ -37,7 +87,9 @@ export default function ProductCatalog() {
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-5 border-b border-slate-200">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-slate-950">Product Catalog</h1>
-                    <p className="text-sm text-slate-500 mt-1">Viewing all available items</p>
+                    <p className="text-sm text-slate-500 mt-1">
+                        {isLoading ? 'Loading catalog items...' : 'Viewing all available items'}
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -45,7 +97,8 @@ export default function ProductCatalog() {
                     <select
                         id="category"
                         value={category}
-                        onChange={(e) => { setCategory(e.target.value); setPage(0); }}
+                        onChange={(e) => { handleCategoryChange(e.target.value) }}
+                        disabled={isLoading}
                         className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All Categories</option>
@@ -63,7 +116,8 @@ export default function ProductCatalog() {
                     <select
                         id="sort_by"
                         value={sortBy}
-                        onChange={(e) => { setSortBy(e.target.value as "created_at" | "updated_at"); setPage(0); }}
+                        disabled={isLoading}
+                        onChange={(e) => { handleSortByChange(e.target.value as "created_at" | "updated_at") }}
                         className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="created_at">Created At</option>
@@ -76,8 +130,9 @@ export default function ProductCatalog() {
                     <input
                         id="limit"
                         type='number'
+                        disabled={isLoading}
                         value={limit}
-                        onChange={(e) => { if (Number(e.target.value) > 0 && Number(e.target.value) <= 40) setLimit(Number(e.target.value)); setPage(0) }}
+                        onChange={(e) => { handleLimitChange(e.target.value) }}
                         className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                     </input>
@@ -110,31 +165,19 @@ export default function ProductCatalog() {
 
             <footer className="flex items-center justify-between border-t border-slate-200 pt-6">
                 <div className="text-sm text-slate-500">
-                    Showing items <span className="font-medium text-slate-800">{page * limit + 1}</span> to <span className="font-medium text-slate-800">{page * limit + products.length}</span>
+                    Showing items <span className="font-medium text-slate-800">{currentPageIndex * limit + 1}</span> to <span className="font-medium text-slate-800">{currentPageIndex * limit + products.length}</span>
                 </div>
                 <div className="flex gap-2">
                     <button
-                        disabled={page === 0}
-                        onClick={() => setPage((p) => Math.max(0, p - 1))}
+                        disabled={currentPageIndex === 0 || isLoading}
+                        onClick={() => handlePrevPage()}
                         className="bg-white border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 px-4 py-2 text-sm font-medium rounded-lg shadow-xs transition-colors cursor-pointer"
                     >
                         Previous
                     </button>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <label htmlFor="page" className="text-sm font-medium text-slate-600 whitespace-nowrap">Page:</label>
-                        <input
-                            id="page"
-                            type='number'
-                            value={page}
-                            onChange={(e) => { if (Number(e.target.value) >= 0 && Number(e.target.value) * limit < 200000) setPage(Number(e.target.value)) }}
-                            className="w-full sm:w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm shadow-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                        >
-                        </input>
-                    </div>
-
                     <button
-                        disabled={products.length < limit}
-                        onClick={() => setPage((p) => p + 1)}
+                        disabled={products.length < limit || isLoading}
+                        onClick={() => handleNextPage()}
                         className="bg-white border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 px-4 py-2 text-sm font-medium rounded-lg shadow-xs transition-colors cursor-pointer"
                     >
                         Next
