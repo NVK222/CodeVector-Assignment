@@ -1,9 +1,20 @@
 from typing import Annotated, Literal
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from codevector.api.schema import Product
 from codevector.supabase_client import supabase
 
 app = FastAPI()
+
+origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
 
 
 @app.get("/api/health")
