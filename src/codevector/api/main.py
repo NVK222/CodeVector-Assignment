@@ -38,6 +38,7 @@ def get_products(
         limit: int = Number of products to return
         category: str = A category from (Electronics, Groceries, Kitchen Appliances, Food, Pets, Fashion)
         sort_by: str = Sort by created_at or updated_at
+        cursor: str = A postgres timestamp to filter by.
     Returns:
         A list of Product. (name, category, price, created_at, updated_at)
     """
