@@ -9,10 +9,10 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://code-vector-assignment-pi.vercel.app/",
-    "https://code-vector-assignment-nvk222s-projects.vercel.app/",
-    "https://code-vector-assignment-git-main-nvk222s-projects.vercel.app/",
-    "https://code-vector-assignment-aefsqjr71-nvk222s-projects.vercel.app/",
+    "https://code-vector-assignment-pi.vercel.app",
+    "https://code-vector-assignment-nvk222s-projects.vercel.app",
+    "https://code-vector-assignment-git-main-nvk222s-projects.vercel.app",
+    "https://code-vector-assignment-aefsqjr71-nvk222s-projects.vercel.app",
 ]
 
 app.add_middleware(
