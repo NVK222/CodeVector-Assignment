@@ -4,6 +4,8 @@ This uses **FastAPI** backend with **Supabase**, using **Postgres** as the datab
 ## The seed file is the **db/seed.sql** file. It uses CTE's for fast and efficient creation of 200000 rows of mock data.
 > ## Note:
 > The render backend takes a while to start up for the first time.
+
+## Live Link: https://code-vector-assignment-pi.vercel.app/  
 # Usage
 1. Clone this repository.
 2. Run `uv sync`.
