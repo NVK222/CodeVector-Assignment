@@ -17,7 +17,38 @@ export default function ProductCatalog() {
     const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null])
     const [currentPageIndex, setCurrentPageIndex] = useState<number>(0)
     const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [isServerWakingUp, setIsServerWakingUp] = useState<boolean>(false)
+    const [serverCheckCompleted, setServerCheckCompleted] = useState<boolean>(false)
 
+    const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000"
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const wakeUpTimeout = setTimeout(() => {
+            if (!serverCheckCompleted) {
+                setIsServerWakingUp(true);
+            }
+        }, 5000);
+
+        fetch(`${API_BASE_URL}/api/health`, { signal: controller.signal })
+            .then((res) => {
+                if (res.ok) {
+                    clearTimeout(wakeUpTimeout);
+                    setIsServerWakingUp(false);
+                    setServerCheckCompleted(true);
+                }
+            })
+            .catch((err) => {
+                if (err.name !== "AbortError") {
+                    console.error("Health check failed:", err);
+                }
+            });
+
+        return () => {
+            clearTimeout(wakeUpTimeout);
+            controller.abort();
+        };
+    }, []);
     useEffect(() => {
         setIsLoading(true)
         const controller = new AbortController()
@@ -33,7 +64,7 @@ export default function ProductCatalog() {
         if (currentCursor) {
             queryParams.append("cursor", currentCursor)
         }
-        fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/items?${queryParams.toString()}`, { signal })
+        fetch(`${API_BASE_URL}/api/items?${queryParams.toString()}`, { signal })
             .then((res) => res.json())
             .then((data: Product[]) => { setProducts(data); setIsLoading(false) })
             .catch((err) => { if (err.name !== "AbortError") { console.error("Error fetching products:", err); setIsLoading(false) } });
@@ -83,6 +114,19 @@ export default function ProductCatalog() {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8 bg-slate-50 text-slate-800 antialiased min-h-screen">
+            {isServerWakingUp && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl flex items-center gap-3 shadow-xs animate-pulse">
+                    <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <div>
+                        <p className="font-semibold text-sm">Server is waking up!</p>
+                        <p className="text-xs text-amber-700 mt-0.5">
+                            The backend is hosted on a free Render service. It takes about 50–60 seconds to spin up on the first request. Thank you for your patience!
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-5 border-b border-slate-200">
                 <div>
