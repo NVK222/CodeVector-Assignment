@@ -6,6 +6,11 @@ This uses **FastAPI** backend with **Supabase**, using **Postgres** as the datab
 > The render backend takes a while to start up for the first time.
 
 ## Live Link: https://code-vector-assignment-pi.vercel.app/  
+
+# Prerequisites  
+1. uv.
+2. pnpm with node installed.  
+  
 # Usage
 1. Clone this repository.
 2. Run `uv sync`.
